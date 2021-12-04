@@ -8,7 +8,7 @@ import {
   formatRawPosition,
 } from "./positionCalculator";
 
-describe("???", () => {
+describe("position-calculator", () => {
   it("should format forward 8 to {forward :8}", () => {
     expect(formatRawPosition("forward 8")).toMatchObject({ forward: 8 });
   });
@@ -44,5 +44,16 @@ describe("???", () => {
     expect(
       calculateFinalAnswer(["forward 10", "forward 5", "down 5", "up 2"])
     ).toEqual(45);
+  });
+  test("aim should be taken into account", () => {
+    const inputs = [
+      "forward 5",
+      "down 5",
+      "forward 8",
+      "up 3",
+      "down 8",
+      "forward 2",
+    ];
+    expect(calculateFinalAnswer(inputs, true)).toEqual(900);
   });
 });

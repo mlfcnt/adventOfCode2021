@@ -7,6 +7,8 @@ type DirectionInput = {
   [K in Direction]?: number;
 };
 
+type Aim = number;
+
 export const formatRawPosition = (rawPosition: RawPosition): DirectionInput => {
   const [direction, value] = rawPosition.split(" ") as [Direction, number];
   return {
@@ -21,30 +23,75 @@ export const formatPositions = (
 };
 
 export const calculateNewXPosition = (
-  currentXPosition: HorizontalPosition,
+  currentXPosition: HorizontalPosition = 0,
   directionInput: DirectionInput
 ): HorizontalPosition => {
   switch (Object.keys(directionInput)[0]) {
-    case "forward":
+    case "forward": {
       return currentXPosition + Object.values(directionInput)[0];
+    }
     default:
       return currentXPosition;
   }
 };
 
 export const calculateNewYPosition = (
-  currentYPosition: VerticalPosition,
-  directionInput: DirectionInput
+  currentYPosition: VerticalPosition = 0,
+  directionInput: DirectionInput,
+  handleAim = false,
+  updateAim?: (aim: Aim) => void,
+  currentAim?: Aim
 ): VerticalPosition => {
-  switch (Object.keys(directionInput)[0]) {
-    case "up":
-      return currentYPosition - Object.values(directionInput)[0];
-    case "down":
-      return currentYPosition + Object.values(directionInput)[0];
+  const distance = Object.values(directionInput)[0];
+  const direction = Object.keys(directionInput)[0];
+  switch (direction) {
+    case "up": {
+      handleAim && updateAim && updateAim((currentAim || 0) - distance);
+      return handleAim ? currentYPosition : currentYPosition - distance;
+    }
+    case "down": {
+      handleAim && updateAim && updateAim((currentAim || 0) + distance);
+      return handleAim ? currentYPosition : currentYPosition + distance;
+    }
+    case "forward": {
+      return handleAim
+        ? (currentYPosition += (currentAim || 0) * distance)
+        : currentYPosition;
+    }
     default:
       return currentYPosition;
   }
 };
+
+export const calculateFinalYPosition = (
+  rawPositions: RawPosition[],
+  handleAim = false
+): VerticalPosition => {
+  const formattedPositions = formatPositions(rawPositions);
+  let currentPosition = 0;
+  let currentAim = 0;
+  const updateAim = (aim: Aim) => {
+    currentAim = aim;
+  };
+  const finalYPosition = formattedPositions.reduce(
+    (finalYPosition, position) => {
+      const newPosition = calculateNewYPosition(
+        currentPosition,
+        position,
+        handleAim,
+        updateAim,
+        currentAim
+      );
+      finalYPosition = newPosition;
+      currentPosition = newPosition;
+      return finalYPosition;
+    },
+    0
+  );
+
+  return finalYPosition;
+};
+
 export const calculateFinalXPosition = (
   rawPositions: RawPosition[]
 ): HorizontalPosition => {
@@ -62,26 +109,12 @@ export const calculateFinalXPosition = (
 
   return finalXPosition;
 };
-export const calculateFinalYPosition = (
-  rawPositions: RawPosition[]
-): VerticalPosition => {
-  const formattedPositions = formatPositions(rawPositions);
-  let currentPosition = 0;
-  const finalYPosition = formattedPositions.reduce(
-    (finalYPosition, position) => {
-      const newPosition = calculateNewYPosition(currentPosition, position);
-      finalYPosition = newPosition;
-      currentPosition = newPosition;
-      return finalYPosition;
-    },
-    0
-  );
 
-  return finalYPosition;
-};
-
-export const calculateFinalAnswer = (rawPositions: RawPosition[]): number => {
-  const finalYPosition = calculateFinalYPosition(rawPositions);
+export const calculateFinalAnswer = (
+  rawPositions: RawPosition[],
+  handleAim = false
+): number => {
+  const finalYPosition = calculateFinalYPosition(rawPositions, handleAim);
   const finalXPosition = calculateFinalXPosition(rawPositions);
   return finalYPosition * finalXPosition;
 };
